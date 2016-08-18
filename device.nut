@@ -3,6 +3,7 @@
 //===========================
 
 #include "ConnectionManager.class.nut"
+#include "UartLogger.class.nut"
 #include "WifiQueue.class.nut"
 
 wifiList <- [
@@ -15,9 +16,11 @@ wifiList <- [
 // PROGRAM CODE
 //===========================
 
-logs <- hardware.uart12;
-logs.configure(9600, 8, PARITY_NONE, 1, NO_CTSRTS);
-logs.write("I'm alive\r\n");
+uart <- hardware.uart12;
+uart.configure(9600, 8, PARITY_NONE, 1, NO_CTSRTS);
+logs <- UartLogger(uart);
+
+logs.log("I'm alive");
 
 imp.wakeup(5, function() {
 	wq <- WifiQueue(wifiList);

@@ -40,7 +40,7 @@ class WifiQueue {
 		_cm.onConnect(function() {
 
 			_connecting = false;
-			logs.write("Successfully connected to network " + _currentNetwork + "\r\n");
+			logs.log("Successfully connected to network " + _wifiList[_currentNetwork].ssid);
 
 		}.bindenv(this));
 
@@ -49,11 +49,11 @@ class WifiQueue {
 
 			_connecting = false;
 
-			logs.write("Could not connect to network " + _currentNetwork + "\r\n");
+			logs.log("Could not connect to network " + _wifiList[_currentNetwork].ssid);
 
 			if (_currentNetwork == (_wifiList.len() - 1)) {
-				logs.write("Failed to connect to any network\r\n");
-				logs.write("Connecting to IndepStudiosUP...")
+				logs.error("Failed to connect to any network");
+				logs.log("Connecting to IndepStudiosUP...")
 				imp.setwificonfiguration("IndepStudiosUP", "lightmyfiretwenty");
 				return;
 			}
@@ -70,11 +70,11 @@ class WifiQueue {
 	function connect() {
 
 		if (_cm.isConnected()) {
-			logs.write("Already connected\r\n");
+			logs.log("Already connected");
 			return;
 		}
 		if (_connecting == true) {
-			logs.write("Already trying to connect\r\n");
+			logs.log("Already trying to connect");
 			return;
 		}
 		_currentNetwork = _currentNetwork || 0; // CHECK THIS!!!!!!!
@@ -83,7 +83,7 @@ class WifiQueue {
 		local network = _wifiList[_currentNetwork];
 
 		imp.setwificonfiguration(network.ssid, network.pw);
-		logs.write("Trying to connect...\r\n");
+		logs.log("Trying to connect...");
 		_cm.connect();
 
 	}
