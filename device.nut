@@ -9,22 +9,25 @@
 wifiList <- [
 	{"ssid": "test1", "pw": "test1"},
 	{"ssid": "test2", "pw": "test2"},
-	{"ssid": "IndepStudiosUP", "pw": "lightmyfiretwenty"}
+	{"ssid": "IndepStudiosUP", "pw": "test3"}
 ];
 
 //===========================
 // PROGRAM CODE
 //===========================
 
+cm <- ConnectionManager({
+	"blinkupBehavior": ConnectionManager.BLINK_ON_DISCONNECT,
+	"startDisconnected": false,
+	"retry": false,
+	"stayConnected": false
+});
+
 uart <- hardware.uart12;
-uart.configure(9600, 8, PARITY_NONE, 1, NO_CTSRTS);
 logs <- UartLogger(uart);
+wq <- WifiQueue(cm, null /* wifiList */, logs);
 
-logs.log("I'm alive");
-
-imp.wakeup(5, function() {
-	wq <- WifiQueue(wifiList);
-	wq.disconnect();
-	wq.init();
+imp.onidle(function() {
 	wq.connect();
-}.bindenv(this));
+});
+
