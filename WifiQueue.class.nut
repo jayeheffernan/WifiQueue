@@ -6,6 +6,7 @@ class WifiQueue {
 	_wifiList = null;
 	_connecting = false;
 	_currentNetwork = null;
+	_warDriving = false;
 
 	_onFail = null;
 	_onConnect = null;
@@ -17,7 +18,9 @@ class WifiQueue {
 		_wifiList = wifiList;
 		if (logs == null) logs = server;
 
-		if (_wifiList != null) {
+		if (_wifiList == null) {
+			_warDriving = true;
+		} else {
 			assert(_wifiList.len() > 0);
 		}
 
@@ -46,7 +49,7 @@ class WifiQueue {
 			_connecting = true;
 			_cm.connect();
 		} else {
-			didFail();
+			if (_onFail) _onFail();
 		}
 
 	}
@@ -91,29 +94,36 @@ class WifiQueue {
 	function didFail() {
 
 		_connecting = false;
+		logs.log("Could not connect to network: " + imp.getssid());
 
-		if (_wifiList == null || _currentNetwork == (_wifiList.len() - 1)) {
-			// Time to wardrive!
-			_wifiList = [];
-			_currentNetwork = 0;
-			local wifis = imp.scanwifinetworks();
-			foreach (wifi in wifis) {
-				if (wifi.open) {
-					_wifiList.push({"ssid": wifi.ssid, "pw": ""})
+		if (_warDriving) {
+			if (_wifiList == null || _wifiList.len() == 0 || _currentNetwork == (_wifiList.len() - 1)) {
+				// Time to wardrive!
+				_wifiList = [];
+				_currentNetwork = 0;
+				local wifis = imp.scanwifinetworks();
+				foreach (wifi in wifis) {
+					if (wifi.open) {
+						_wifiList.push({"ssid": wifi.ssid, "pw": ""})
+					}
 				}
 			}
-		}
-
-		if (_currentNetwork == (_wifiList.len() - 1)) {
+		} else if (_currentNetwork == (_wifiList.len() - 1)) {
 			logs.error("Failed to connect to any network");
-		} else {
-			logs.log("Could not connect to network: " + imp.getssid());
 		}
 
 		// Try the next network
-		_currentNetwork = _currentNetwork == null ? 0 : (_currentNetwork + 1) % _wifiList.len();
-		local network = _wifiList[_currentNetwork];
-		imp.setwificonfiguration(network.ssid, network.pw);
+		if (_wifiList.len() > 0) {
+			_currentNetwork = _currentNetwork == null ? 0 : (_currentNetwork + 1) % _wifiList.len();
+			local network = _wifiList[_currentNetwork];
+			if ("ssid" in network && network.ssid.len() > 0 && "pw" in network) {
+				imp.setwificonfiguration(network.ssid, network.pw);
+			} else {
+				logs.error("Skipping invalid wifi list entry " + _currentNetwork);
+			}
+		} else {
+			logs.error("No networks to try");
+		}
 
 		// Throw the event
 		if (_onFail) _onFail();
