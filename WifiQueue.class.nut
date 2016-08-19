@@ -35,6 +35,15 @@ class WifiQueue {
 		_cm.onDisconnect(didDisconnect.bindenv(this));
 	}
 
+	//-----------------------
+	function setLogs(logs) {
+		_logs = logs;
+	}
+
+	function setWifiList(wifiList) {
+		_wifiList = wifiList;
+		_currentNetwork = null;
+	}
 
 	//-----------------------
 	// Attempt to connect to each network in the list until the first successful connection
@@ -119,6 +128,8 @@ class WifiQueue {
 			_logs.error("Failed to connect to any network");
 		}
 
+		local oldSsid = _wifiList[_currentNetwork].ssid;
+
 		// Try the next network
 		if (_wifiList.len() > 0) {
 			_currentNetwork = _currentNetwork == null ? 0 : (_currentNetwork + 1) % _wifiList.len();
@@ -133,7 +144,7 @@ class WifiQueue {
 		}
 
 		// Throw the event
-		if (_onFail) _onFail();
+		if (_onFail) _onFail(oldSsid);
 		if (!_connecting) {
 			connect();
 		}

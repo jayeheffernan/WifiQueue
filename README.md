@@ -38,6 +38,14 @@ wq <- WifiQueue(cm, wifiList, logs);
 
 ## Class Methods
 
+# setLogs(logs)
+
+This function allows the user to change the logs object.
+
+# setWifiList(wifiList)
+
+This function allows the user to change the list of networks. When the device next attempts to connect it will start from the beginning of the list.
+
 ## connect()
 
 This function triggers the device to start trying to connect. It will first attempt to connect to the network it was blinked up to and if that
@@ -66,10 +74,10 @@ wq.onConnect(function() {
 
 ## onFail(*callback*)
 
-This function sets a callback to be trigger whenever the device attempts and fails to connect.
+This function sets a callback to be trigger whenever the device attempts and fails to connect. The failed SSID is passed to the function
 
 ```squirrel
-wq.onFail(function() {
+wq.onFail(function(ssid) {
 	// Do something here...
 })
 ```
