@@ -62,6 +62,10 @@ wq.connect();
 
 This function disconnects the device from WiFi. The `didDisconnect()` function will be triggered.
 
+```squirrel
+wq.disconnect();
+```
+
 ## onConnect(*callback*)
 
 This function sets a callback to be trigger whenever the device connects.
