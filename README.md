@@ -88,4 +88,6 @@ wq.onDisconnect(function(expected) {
 })
 ```
 
+# License
+
 The WifiQueue class is licensed under the [MIT License](https://github.com/mysticpants/WifiQueue/LICENSE)
