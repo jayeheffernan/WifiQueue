@@ -1,4 +1,10 @@
+
+// Copyright (c) 2016 Mystic Pants Pty Ltd
+// This file is licensed under the MIT License
+// http://opensource.org/licenses/MIT
+
 class UartLogger {
+	static version = [1,0,0];
 
 	// Variables
 	_uart = null;

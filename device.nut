@@ -1,3 +1,8 @@
+
+// Copyright (c) 2016 Mystic Pants Pty Ltd
+// This file is licensed under the MIT License
+// http://opensource.org/licenses/MIT
+
 //===========================
 // SETUP
 //===========================
@@ -7,9 +12,9 @@
 #include "WifiQueue.class.nut"
 
 wifiList <- [
-	{"ssid": "test1", "pw": "test1"},
-	{"ssid": "test2", "pw": "test2"},
-	{"ssid": "IndepStudiosUP", "pw": "test3"}
+	{"ssid": "test1", "pw": "password"},
+	{"ssid": "test2", "pw": "password"},
+	{"ssid": "test3", "pw": "password"}
 ];
 
 //===========================
@@ -25,7 +30,7 @@ cm <- ConnectionManager({
 
 uart <- hardware.uart12;
 logs <- UartLogger(uart);
-wq <- WifiQueue(cm, null /* wifiList */, logs);
+wq <- WifiQueue(cm, wifiList, logs);
 
 imp.onidle(function() {
 	wq.connect();

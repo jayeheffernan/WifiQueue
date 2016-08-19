@@ -1,5 +1,10 @@
 
+// Copyright (c) 2016 Mystic Pants Pty Ltd
+// This file is licensed under the MIT License
+// http://opensource.org/licenses/MIT
+
 class WifiQueue {
+	static version = [1,0,0];
 
 	// Variables
 	_cm = null;
@@ -11,12 +16,13 @@ class WifiQueue {
 	_onFail = null;
 	_onConnect = null;
 	_onDisconnect = null;
+	_logs = null;
 
 	constructor(cm, wifiList = null, logs = null) {
 
 		_cm = cm;
 		_wifiList = wifiList;
-		if (logs == null) logs = server;
+		_logs = logs || server;
 
 		if (_wifiList == null) {
 			_warDriving = true;
@@ -35,7 +41,7 @@ class WifiQueue {
 	function connect() {
 
 		if (_connecting) {
-			logs.log("Already trying to connect");
+			_logs.log("Already trying to connect");
 			return false;
 		}
 
@@ -45,7 +51,7 @@ class WifiQueue {
 		}
 
 		if (imp.getssid() != "") {
-			logs.log("Trying to connect to: " + imp.getssid());
+			_logs.log("Trying to connect to: " + imp.getssid());
 			_connecting = true;
 			_cm.connect();
 		} else {
@@ -78,13 +84,14 @@ class WifiQueue {
 		_onDisconnect = callback;
 	}
 
+	/*------------- PRIVATE FUNCTIONS -------------*/
 
 	//-----------------------
 	// Callback to run when device connects
 	function didConnect() {
 
 		_connecting = false;
-		logs.log("Successfully connected to network: " + imp.getssid());
+		_logs.log("Successfully connected to network: " + imp.getssid());
 
 		if (_onConnect) _onConnect();
 	}
@@ -94,7 +101,7 @@ class WifiQueue {
 	function didFail() {
 
 		_connecting = false;
-		logs.log("Could not connect to network: " + imp.getssid());
+		_logs.log("Could not connect to network: " + imp.getssid());
 
 		if (_warDriving) {
 			if (_wifiList == null || _wifiList.len() == 0 || _currentNetwork == (_wifiList.len() - 1)) {
@@ -109,7 +116,7 @@ class WifiQueue {
 				}
 			}
 		} else if (_currentNetwork == (_wifiList.len() - 1)) {
-			logs.error("Failed to connect to any network");
+			_logs.error("Failed to connect to any network");
 		}
 
 		// Try the next network
@@ -119,10 +126,10 @@ class WifiQueue {
 			if ("ssid" in network && network.ssid.len() > 0 && "pw" in network) {
 				imp.setwificonfiguration(network.ssid, network.pw);
 			} else {
-				logs.error("Skipping invalid wifi list entry " + _currentNetwork);
+				_logs.error("Skipping invalid wifi list entry " + _currentNetwork);
 			}
 		} else {
-			logs.error("No networks to try");
+			_logs.error("No networks to try");
 		}
 
 		// Throw the event
