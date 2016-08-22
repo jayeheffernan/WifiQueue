@@ -40,9 +40,15 @@ class WifiQueue {
 		_logs = logs;
 	}
 
+	//-----------------------
 	function setWifiList(wifiList) {
 		_wifiList = wifiList;
 		_currentNetwork = null;
+	}
+
+	//-----------------------
+	function isConnected() {
+		_cm.isConnected();
 	}
 
 	//-----------------------
