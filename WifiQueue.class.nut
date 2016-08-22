@@ -48,7 +48,7 @@ class WifiQueue {
 
 	//-----------------------
 	function isConnected() {
-		_cm.isConnected();
+		return _cm.isConnected();
 	}
 
 	//-----------------------
