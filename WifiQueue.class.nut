@@ -134,7 +134,7 @@ class WifiQueue {
 			_logs.error("Failed to connect to any network");
 		}
 
-		local oldSsid = _wifiList[_currentNetwork].ssid;
+		local oldSsid = imp.getssid();
 
 		// Try the next network
 		if (_wifiList.len() > 0) {
