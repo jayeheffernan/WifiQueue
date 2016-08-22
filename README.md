@@ -10,6 +10,7 @@ Always use the `connect` and `disconnect` functions from this class instead of t
 ### Constructor: WifiQueue(*cm[, wifiList[,  logs]]*)
 
 The WifiQueue class is instantiated with a ConnectionManager object and two optional parameters, wifiList and logs.
+**NOTE:** The WifiQueue class requires the ConnectionManager's `retry` parameter to be set to `false` as seen below.
 
 | key               | default             | notes |
 | ----------------- | ------------------- | ----- |
