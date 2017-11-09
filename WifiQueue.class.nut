@@ -31,7 +31,7 @@ class WifiQueue {
 		}
 
 		_cm.onConnect(didConnect.bindenv(this));
-		_cm.onFail(didFail.bindenv(this));
+		_cm.onTimeout(didFail.bindenv(this));
 		_cm.onDisconnect(didDisconnect.bindenv(this));
 	}
 
