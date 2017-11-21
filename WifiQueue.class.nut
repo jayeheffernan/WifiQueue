@@ -1,170 +1,182 @@
-
 // Copyright (c) 2016 Mystic Pants Pty Ltd
 // This file is licensed under the MIT License
 // http://opensource.org/licenses/MIT
 
+const WIFIQUEUE_HIDDEN = 0x01;
+const WIFIQUEUE_OPEN   = 0x02;
+
 class WifiQueue {
-	static version = [1,0,0];
+    static version = [3, 0, 0];
 
-	// Variables
-	_cm = null;
-	_wifiList = null;
-	_connecting = false;
-	_currentNetwork = null;
-	_warDriving = false;
+    _cm = null;
+    _wifis = null;
+    _connecting = false;
+    _hidden = null;
+    _open = null;
+    // Whether we have scanned for open wifi networks to initiate warDriving yet
+    _warDriving = false;
 
-	_onFail = null;
-	_onConnect = null;
-	_onDisconnect = null;
-	_logs = null;
+    _onFail = null;
+    _onConnect = null;
+    _onDisconnect = null;
 
-	constructor(cm, wifiList = null, logs = null) {
+    // -----------------------
+    // wifis should be an [ { ssid, pw } ]
+    // `hidden` is whether to try networks in `wifis` even if they are not visible
+    // `open` is whether to try open networks
+    constructor(cm, wifis = null, flags = null, logger = server) {
+        _cm = cm;
 
-		_cm = cm;
-		_wifiList = wifiList;
-		_logs = logs || server;
+        // Copy the array because we will be mutating it, and we need to be the
+        // only ones
+        _wifis = clone(wifis || []);
 
-		if (_wifiList == null) {
-			_warDriving = true;
-		} else {
-			assert(_wifiList.len() > 0);
-		}
+        // Remove invalid entries
+        for (local i = _wifis.len() - 1; i >= 0; i--) {
+            local n = _wifis[i];
+            if (!("ssid" in n && n.ssid.len() > 0 && "pw" in n)) {
+                logger.error("invalid wifi: " + i);
+                _wifis.remove(i);
+            }
+        }
 
-		_cm.onConnect(didConnect.bindenv(this));
-		_cm.onTimeout(didFail.bindenv(this));
-		_cm.onDisconnect(didDisconnect.bindenv(this));
-	}
+        // Process options
+        flags = flags || 0;
+        _hidden = flags & WIFIQUEUE_HIDDEN;
+        _open   = flags & WIFIQUEUE_OPEN;
 
-	//-----------------------
-	function setLogs(logs) {
-		_logs = logs;
-	}
-
-	//-----------------------
-	function setWifiList(wifiList) {
-		_wifiList = wifiList;
-		_currentNetwork = null;
-	}
-
-	//-----------------------
-	function isConnected() {
-		return _cm.isConnected();
-	}
-
-	//-----------------------
-	// Attempt to connect to each network in the list until the first successful connection
-	function connect() {
-
-		if (_connecting) {
-			_logs.log("Already trying to connect");
-			return false;
-		}
-
-		if (_cm.isConnected()) {
-			didConnect();
-			return true;
-		}
-
-		if (imp.getssid() != "") {
-			_logs.log("Trying to connect to: " + imp.getssid());
-			_connecting = true;
-			_cm.connect();
-		} else {
-			if (_onFail) _onFail();
-		}
-
-	}
-
-	//-----------------------
-	function disconnect() {
-		_connecting = false;
-		_cm.disconnect();
-	}
+        _cm.onConnect(_didConnect.bindenv(this));
+        _cm.onTimeout(_didTimeout.bindenv(this));
+        _cm.onDisconnect(_didDisconnect.bindenv(this));
+    }
 
 
-	//-----------------------
-	function onConnect(callback) {
-		_onConnect = callback;
-	}
+    // -----------------------
+    // Attempt to connect to each network in the list until the first successful connection
+    function connect() {
+        if (_connecting) {
+            return false;
+        }
+
+        if (_cm.isConnected()) {
+            _didConnect();
+            return true;
+        }
+
+        if (imp.getssid() != "") {
+            _connecting = true;
+            _cm.connect();
+        } else {
+            if (_onFail) _onFail();
+        }
+    }
+
+    // -----------------------
+    function disconnect() {
+        _connecting = false;
+        _cm.disconnect();
+    }
 
 
-	//-----------------------
-	function onFail(callback) {
-		_onFail = callback;
-	}
+    // -----------------------
+    function onConnect(callback) {
+        _onConnect = callback;
+        return this;
+    }
 
 
-	//-----------------------
-	function onDisconnect(callback) {
-		_onDisconnect = callback;
-	}
-
-	/*------------- PRIVATE FUNCTIONS -------------*/
-
-	//-----------------------
-	// Callback to run when device connects
-	function didConnect() {
-
-		_connecting = false;
-		_logs.log("Successfully connected to network: " + imp.getssid());
-
-		if (_onConnect) _onConnect();
-	}
-
-	//-----------------------
-	// Callback to run when device attempts and fails to connect
-	function didFail() {
-
-		_connecting = false;
-		_logs.log("Could not connect to network: " + imp.getssid());
-
-		if (_warDriving) {
-			if (_wifiList == null || _wifiList.len() == 0 || _currentNetwork == (_wifiList.len() - 1)) {
-				// Time to wardrive!
-				_wifiList = [];
-				_currentNetwork = 0;
-				local wifis = imp.scanwifinetworks();
-				foreach (wifi in wifis) {
-					if (wifi.open) {
-						_wifiList.push({"ssid": wifi.ssid, "pw": ""})
-					}
-				}
-			}
-		} else if (_currentNetwork == (_wifiList.len() - 1)) {
-			_logs.error("Failed to connect to any network");
-		}
-
-		local oldSsid = imp.getssid();
-
-		// Try the next network
-		if (_wifiList.len() > 0) {
-			_currentNetwork = _currentNetwork == null ? 0 : (_currentNetwork + 1) % _wifiList.len();
-			local network = _wifiList[_currentNetwork];
-			if ("ssid" in network && network.ssid.len() > 0 && "pw" in network) {
-				imp.setwificonfiguration(network.ssid, network.pw);
-			} else {
-				_logs.error("Skipping invalid wifi list entry " + _currentNetwork);
-			}
-		} else {
-			_logs.error("No networks to try");
-		}
-
-		// Throw the event
-		if (_onFail) _onFail(oldSsid);
-		if (!_connecting) {
-			connect();
-		}
-
-	}
+    // -----------------------
+    function onFail(callback) {
+        _onFail = callback;
+        return this;
+    }
 
 
-	//-----------------------
-	function didDisconnect(expected) {
-		_connecting = false;
-		if (_onDisconnect) _onDisconnect(expected);
-		if (!expected && !_connecting) {
-			connect();
-		}
-	}
+    // -----------------------
+    function onDisconnect(callback) {
+        _onDisconnect = callback;
+        return this;
+    }
+
+    /*------------- PRIVATE FUNCTIONS -------------*/
+
+    // -----------------------
+    // Callback to run when device connects
+    function _didConnect() {
+        _connecting = false;
+        logger.log("Connected to network: " + imp.getssid());
+        if (_onConnect) _onConnect();
+    }
+
+
+    // -----------------------
+    // Callback to run when device times out connecting to a network
+    function _didTimeout() {
+        _connecting = false;
+        logger.log("Could not connect to network: " + imp.getssid());
+
+        // Select the next network to try
+        local next = _pop();
+
+        if (next) {
+            // Configure the Imp to use the network
+            imp.setwificonfiguration(next.ssid, next.pw);
+
+            // Try to connect
+            connect();
+        } else {
+            // No next network to try, we're all out of ideas
+            return _onFail();
+        }
+    }
+
+
+    // -----------------------
+    function _didDisconnect(expected) {
+        _connecting = false;
+        if (_onDisconnect) _onDisconnect(expected);
+        if (!expected && !_connecting) {
+            connect();
+        }
+    }
+
+
+    // -----------------------
+    // Select and "pop" the next network off the list of networks to try
+    function _pop() {
+        // Scan the area
+        local visible = imp.scanwifinetworks();
+
+        // Ideally we can find a know network that is also visible...
+        foreach(ind, known in _wifis) {
+            foreach (seen in visible) {
+                if (known.ssid == seen.ssid) {
+                    // We know about this network, and it is visible.  Sounds
+                    // promising!
+                    return _wifis.remove(ind);
+                }
+            }
+        }
+
+        // No visible networks are known...
+        if (_wifis.len() && _hidden && !_warDriving) {
+            // We have known, untried networks and we are supposed to try them
+            // all.  Just grab the first one.
+            // Note that if we are warDriving already, then we know there
+            // aren't any hidden networks in the list anymore
+            return _wifis.remove(0);
+        } else if (_open && !_warDriving) {
+            // We are done with all our known networks, let's have a go at wardriving!
+            // Reset our "known" list of wifis to the list of all open visible networks.
+            _wifis = visible.filter(@(nw) nw.open).map(@(nw) { "ssid": nw.ssid, "pw": "" });
+            if (_wifis.len()) {
+                // Try the first one
+                return _wifis.remove(0);
+            }
+        }
+
+        // No networks found to try, give up
+        return null;
+    }
 
 }
