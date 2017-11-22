@@ -20,6 +20,8 @@ class WifiQueue {
     _open = null;
     // Whether we have scanned for open wifi networks to initiate warDriving yet
     _warDriving = false;
+    // Logger object
+    _logger = null;
 
     // Callbacks
     _onFail = null;
@@ -33,6 +35,7 @@ class WifiQueue {
     // `logger` is a logger object with `.log()` and `.error()` methods
     constructor(cm, flags = null, logger = server) {
         _cm = cm;
+        _logger = logger;
 
         // Process options
         flags = flags || 0;
@@ -66,7 +69,7 @@ class WifiQueue {
             for (local i = _wifis.len() - 1; i >= 0; i--) {
                 local n = _wifis[i];
                 if (!("ssid" in n && n.ssid.len() > 0 && "pw" in n)) {
-                    logger.error("invalid wifi: " + i);
+                    _logger.error("invalid wifi: " + i);
                     _wifis.remove(i);
                 }
             }
@@ -126,7 +129,7 @@ class WifiQueue {
     // Callback to run when device connects
     function _didConnect() {
         _connecting = false;
-        logger.log("Connected to network: " + imp.getssid());
+        _logger.log("Connected to network: " + imp.getssid());
         if (_onConnect) _onConnect();
     }
 
@@ -135,7 +138,7 @@ class WifiQueue {
     // Callback to run when device times out connecting to a network
     function _didTimeout() {
         _connecting = false;
-        logger.log("Could not connect to network: " + imp.getssid());
+        _logger.log("Could not connect to network: " + imp.getssid());
 
         // Select the next network to try
         local next = _pop();
