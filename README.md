@@ -2,24 +2,12 @@
 
 The WifiQueue class is an Electric Imp device side library to allow the device to attempt to connect to a supplied list of WiFi networks.
 
-**NOTE:** Requires ConnectionManager v1.1.1.
-Always use the `connect` and `disconnect` functions from this class instead of the corresponding functions in ConnectionManager or `server.connect` and `server.disconnect`.
+**NB:** Requires ConnectionManager v1.1.1.  Always use the `connect` and `disconnect` functions from this class instead of the corresponding functions in ConnectionManager or `server.connect` and `server.disconnect`.
 
-## Class Usage
-
-### Constructor: WifiQueue(*cm[, wifiList[,  flags[, logger]]]*)
-
-The WifiQueue class is instantiated with a ConnectionManager object and two optional parameters, wifiList and logs.
-
-**NOTE:** The WifiQueue class requires the ConnectionManager's `retry` parameter to be set to `false`, as seen below.
-
-| key               | default             | notes                                                           |
-| ----------------- | ------------------- | -----                                                           |
-| cm                | N/A                 | A ConnectionManager object                                      |
-| wifiList          | `NULL`              | An array of objects with `ssid` and `pw` parameters             |
-| flags             | `NULL`              | A bit array of binary options that control connection behaviour |
+## Usage
 
 ```squirrel
+// List of wifis to use
 wifis <- [
 	{"ssid": "test1", "pw": "password"},
 	{"ssid": "test2", "pw": "password"},
@@ -32,33 +20,18 @@ cm <- ConnectionManager({
 	"retry": false,
 	"stayConnected": false
 });
-uart <- hardware.uart12;
-logs <- UartLogger(uart);
 
-logger <- server;
+wq <- WifiQueue(cm, WIFIQUEUE_HIDDEN | WIFIQUEUE_OPEN)
 
-WifiQueue(cm, wifis, WIFIQUEUE_HIDDEN | WIFIQUEUE_OPEN, logger)
+wq
 	.onConnect(function() {
 		logger.log("WifiQueue connected to " + imp.getssid());
 	})
 	.onFail(function() {
 		logger.error("WifiQueue failed to connect");
-	})
-	.connect();
+	});
+	.connect(wifis);
 ```
-
-## Flags
-
-Flags are boolean options passed as the 3rd argument to the constructor.  Multiple flags should be "added"/"stacked" with the binary "or" operator, `|`.  All flags are off/`false` by default.
-
-### WIFIQUEUE\_HIDDEN
-
-This flag indicates whether any wifis listed in `wifiList` might be hidden.  If set, WifiQueue will try all networks in `wifiList` regardless of visibility.
-
-### WIFIQUEUE\_OPEN
-
-This flag indicates whether WifiQueue should try to connect to an visible
-networks that are open.
 
 ## Connection Flow
 
@@ -68,28 +41,52 @@ networks that are open.
 4. If WIFIQUEUE\_OPEN is set, call `imp.scanwifinetworks()` once to get a list of visible, open networks.  Try to connect to each in turn, as long as it remains visible at the time of attempting to connect.
 5. If we have still not managed to connect to any network, call the `onFail` callback.
 
-## Class Methods
+## Constructor: WifiQueue(*cm[, flags[, logger]]*)
 
-# setLogs(logs)
+The WifiQueue class is instantiated with a ConnectionManager object and two optional parameters, wifiList and logs.
 
-This function allows the user to change the logs object.
+**NOTE:** The WifiQueue class requires the ConnectionManager's `retry` parameter to be set to `false`, as seen below.
 
-# setWifiList(wifiList)
+| key               | default             | notes                                                           |
+| ----------------- | ------------------- | -----                                                           |
+| cm                | N/A                 | A ConnectionManager object                                      |
+| flags             | `null`/`0`          | A bit array of binary options that control connection behaviour |
+| logger            | `server`            | A logger object with `.log()` and `.error()` methods            |
 
-This function allows the user to change the list of networks. When the device next attempts to connect it will start from the beginning of the list.
+### Flags
 
-## connect()
+Flags are boolean options passed as the 3rd argument to the constructor.  Multiple flags should be "added"/"stacked" with the binary "or" operator, `|`.  All flags are off/`false` by default.
+
+#### WIFIQUEUE\_HIDDEN
+
+This flag indicates whether any wifis listed in `wifiList` might be hidden.  If set, WifiQueue will try all networks in `wifiList` regardless of visibility.
+
+#### WIFIQUEUE\_OPEN
+
+This flag indicates whether WifiQueue should try to connect to an visible
+networks that are open.
+
+## Connection Management
+
+### connect(*wifis*)
 
 Triggers the device to start trying to connect.
 
-Will return `false` if it is already trying to connect and `true` if it is already connected.
-If the current ssid is empty, the onFail handler will immediately be called.
+Will return `false` if it is already trying to connect and `true` if it is already connected.  If the current ssid is empty, the onFail handler will immediately be called.
+
+The list of wifis to connect to should be passed to `.connect()` on every call, but the array that's passed in will not be mutated.  This supports a wifi list that can change between connection attempts, but please *DO NOT* assume that calling `.connect()` without arguments will cause it to use any wifis that have been passed in previously.
 
 ```squirrel
-wq.connect();
+wifis <- [
+	{"ssid": "test1", "pw": "password"},
+	{"ssid": "test2", "pw": "password"},
+	{"ssid": "test3", "pw": "password"}
+]
+
+wq.connect(wifis);
 ```
 
-## disconnect()
+### disconnect()
 
 Disconnects the device from WiFi. The `didDisconnect()` function will be triggered.
 
@@ -97,7 +94,9 @@ Disconnects the device from WiFi. The `didDisconnect()` function will be trigger
 wq.disconnect();
 ```
 
-## onConnect(*callback*)
+## Callback Setters
+
+### onConnect(*callback*)
 
 Sets a callback to be trigger whenever the device connects.
 
@@ -107,7 +106,7 @@ wq.onConnect(function() {
 })
 ```
 
-## onFail(*callback*)
+### onFail(*callback*)
 
 Sets a callback to be trigger whenever the device attempts and fails to connect. The failed SSID is passed to the function
 
@@ -117,7 +116,7 @@ wq.onFail(function() {
 })
 ```
 
-## onDisconnect(*callback*)
+### onDisconnect(*callback*)
 
 Sets a callback to be trigger whenever the device disconnects. An `expected` parameter is passed to the function.
 
