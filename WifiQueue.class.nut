@@ -174,10 +174,12 @@ class WifiQueue {
     // -----------------------
     // Callback to run when WifiQueue fails to connect to any network
     function _didFail() {
+        // If there's no callback, or debug is set, then log this failure
+        if (!_onFail || _debug) {
+            _logger.error("WifiQueue failed to connect");
+        }
         if (_onFail) {
             _onFail();
-        } else {
-            _logger.error("WifiQueue failed to connect");
         }
     }
 

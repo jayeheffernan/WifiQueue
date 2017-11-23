@@ -25,11 +25,11 @@ wq <- WifiQueue(cm, WIFIQUEUE_HIDDEN | WIFIQUEUE_OPEN)
 
 wq
 	.onConnect(function() {
-		logger.log("WifiQueue connected to " + imp.getssid());
+		server.log("WifiQueue connected to " + imp.getssid());
 	})
 	.onFail(function() {
-		logger.error("WifiQueue failed to connect");
-	});
+		// Failed to connect...
+	})
 	.connect(wifis);
 ```
 
@@ -65,6 +65,11 @@ This flag indicates whether any wifis listed in `wifiList` might be hidden.  If 
 
 This flag indicates whether WifiQueue should try to connect to an visible
 networks that are open.
+
+#### WIFIQUEUE\_DEBUG
+
+This flag indicates whether WifiQueue should log debug info to the logger
+object, such as failed connection attempts.
 
 ## Connection Management
 
