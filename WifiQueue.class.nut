@@ -4,6 +4,7 @@
 
 const WIFIQUEUE_HIDDEN = 0x01;
 const WIFIQUEUE_OPEN   = 0x02;
+const WIFIQUEUE_DEBUG  = 0x04;
 
 class WifiQueue {
     static version = [3, 0, 0];
@@ -22,6 +23,8 @@ class WifiQueue {
     _warDriving = false;
     // Logger object
     _logger = null;
+    // Whether to log debug info
+    _debug = null;
 
     // Callbacks
     _onFail = null;
@@ -30,7 +33,6 @@ class WifiQueue {
 
     // -----------------------
     // `cm` is a connection manager instance
-    // `wifis` is an [ { ssid, pw } ]
     // `flags` is a bit-array of boolean options`
     // `logger` is a logger object with `.log()` and `.error()` methods
     constructor(cm, flags = null, logger = server) {
@@ -41,6 +43,7 @@ class WifiQueue {
         flags = flags || 0;
         _hidden = flags & WIFIQUEUE_HIDDEN;
         _open   = flags & WIFIQUEUE_OPEN;
+        _debug  = flags & WIFIQUEUE_DEBUG;
 
         // Set ConnectionManager callbacks
         _cm.onConnect(_didConnect.bindenv(this));
@@ -69,7 +72,7 @@ class WifiQueue {
             for (local i = _wifis.len() - 1; i >= 0; i--) {
                 local n = _wifis[i];
                 if (!("ssid" in n && n.ssid.len() > 0 && "pw" in n)) {
-                    _logger.error("invalid wifi: " + i);
+                    _debug && _logger.error("WifiQueue invalid wifi: " + i);
                     _wifis.remove(i);
                 }
             }
@@ -88,7 +91,7 @@ class WifiQueue {
             _connecting = true;
             _cm.connect();
         } else {
-            if (_onFail) _onFail();
+            _didFail();
         }
     }
 
@@ -129,7 +132,7 @@ class WifiQueue {
     // Callback to run when device connects
     function _didConnect() {
         _connecting = false;
-        _logger.log("Connected to network: " + imp.getssid());
+        _debug && _logger.log("WifiQueue connected to network: " + imp.getssid());
         if (_onConnect) _onConnect();
     }
 
@@ -138,7 +141,7 @@ class WifiQueue {
     // Callback to run when device times out connecting to a network
     function _didTimeout() {
         _connecting = false;
-        _logger.log("Could not connect to network: " + imp.getssid());
+        _debug && _logger.log("WifiQueue could not connect to network: " + imp.getssid());
 
         // Select the next network to try
         local next = _pop();
@@ -151,7 +154,7 @@ class WifiQueue {
             connect(null, false);
         } else {
             // No next network to try, we're all out of ideas
-            return _onFail();
+            _didFail();
         }
     }
 
@@ -164,6 +167,17 @@ class WifiQueue {
         if (!expected) {
             // Try again
             connect(null, false);
+        }
+    }
+
+
+    // -----------------------
+    // Callback to run when WifiQueue fails to connect to any network
+    function _didFail() {
+        if (_onFail) {
+            _onFail();
+        } else {
+            _logger.error("WifiQueue failed to connect");
         }
     }
 
