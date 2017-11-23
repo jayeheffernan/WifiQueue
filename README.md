@@ -43,7 +43,7 @@ wq
 
 ## Constructor: WifiQueue(*cm[, flags[, logger]]*)
 
-The WifiQueue class is instantiated with a ConnectionManager object and two optional parameters, wifiList and logs.
+The WifiQueue class is instantiated with a ConnectionManager object and two optional parameters, `flags` and `logger`.
 
 **NOTE:** The WifiQueue class requires the ConnectionManager's `retry` parameter to be set to `false`, as seen below.
 
@@ -103,7 +103,7 @@ wq.disconnect();
 
 ### onConnect(*callback*)
 
-Sets a callback to be trigger whenever the device connects.
+Sets a callback to be trigger whenever the device connects.  The callback will also be triggered immediately if `.connect()` is called while the device is already connected.
 
 ```squirrel
 wq.onConnect(function() {
