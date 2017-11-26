@@ -64,18 +64,14 @@ class WifiQueue {
             // Cancel any in-progress wardriving
             _warDriving = false;
 
-             // Copy the array because we will be mutating it, and we need to be the
+            // Copy the array because we will be mutating it, and we need to be the
             // only ones
-            _wifis = clone(wifis || []);
-
-            // Remove invalid entries
-            for (local i = _wifis.len() - 1; i >= 0; i--) {
-                local n = _wifis[i];
-                if (!("ssid" in n && n.ssid.len() > 0 && "pw" in n)) {
-                    _debug && _logger.error("WifiQueue invalid wifi: " + i);
-                    _wifis.remove(i);
-                }
+            _wifis = clone(wifis || []).filter(@(n) "ssid" in n && "pw" in n);
+            local invalid = wifis.len() - _wifis.len();
+            if (invalid > 0 && _debug) {
+                _logger.error("WifiQueue invalid wifis: " + invalid);
             }
+
         }
 
         if (_connecting) {
