@@ -7,7 +7,7 @@ const WIFIQUEUE_OPEN   = 0x02;
 const WIFIQUEUE_DEBUG  = 0x04;
 
 class WifiQueue {
-    static version = [3, 0, 0];
+    static version = [2, 0, 0];
 
     // Connection manager instance
     _cm = null;

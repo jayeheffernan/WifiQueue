@@ -1,4 +1,4 @@
-# WifiQueue 3.0.0
+# WifiQueue 2.0.0
 
 The WifiQueue class is an Electric Imp device side library to allow the device to attempt to connect to a supplied list of WiFi networks.
 
