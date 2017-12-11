@@ -66,7 +66,7 @@ class WifiQueue {
 
             // Copy the array because we will be mutating it, and we need to be the
             // only ones
-            _wifis = clone(wifis || []).filter(@(n) "ssid" in n && "pw" in n);
+            _wifis = clone(wifis || []).filter(@(_, n) "ssid" in n && "pw" in n);
             local invalid = wifis.len() - _wifis.len();
             if (invalid > 0 && _debug) {
                 _logger.error("WifiQueue invalid wifis: " + invalid);
@@ -207,7 +207,7 @@ class WifiQueue {
         } else if (_open && !_warDriving) {
             // We are done with all our known networks, let's have a go at wardriving!
             // Reset our "known" list of wifis to the list of all open visible networks.
-            _wifis = visible.filter(@(nw) nw.open).map(@(nw) { "ssid": nw.ssid, "pw": "" });
+            _wifis = visible.filter(@(_, nw) nw.open).map(@(nw) { "ssid": nw.ssid, "pw": "" });
             if (_wifis.len()) {
                 // Try the first one
                 return _wifis.remove(0);
